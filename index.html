@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#1A1714">
+<title>Riassumi Documento</title>
+<link rel="manifest" href="/manifest.json">
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg: #F5F2ED; --surface: #FDFCFA; --border: #E0DBCF;
+    --text: #1A1714; --muted: #7A736A; --accent: #2C2318;
+    --accent-light: #E8E0D4; --result-bg: #1A1714; --result-text: #F5F2ED;
+    --font-display: 'DM Serif Display', Georgia, serif;
+    --font-body: 'DM Sans', sans-serif;
+  }
+  body { font-family: var(--font-body); background: var(--bg); color: var(--text); min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 2rem 1rem; }
+  .app { width: 100%; max-width: 560px; }
+  .header { margin-bottom: 2.5rem; }
+  .header h1 { font-family: var(--font-display); font-size: 2.4rem; font-weight: 400; letter-spacing: -0.01em; line-height: 1.1; }
+  .header h1 em { font-style: italic; color: var(--muted); }
+  .header p { margin-top: 0.6rem; font-size: 14px; color: var(--muted); font-weight: 300; }
+  .drop-zone { position: relative; border: 1.5px dashed var(--border); border-radius: 16px; background: var(--surface); transition: border-color 0.2s, background 0.2s; overflow: hidden; min-height: 180px; display: flex; align-items: center; justify-content: center; }
+  .drop-zone.drag-over { border-color: var(--accent); background: var(--accent-light); }
+  #file-input, #camera-input { display: none; }
+  .drop-placeholder { text-align: center; padding: 2.5rem; }
+  .drop-icon { width: 44px; height: 44px; margin: 0 auto 1rem; border: 1.5px solid var(--border); border-radius: 12px; display: flex; align-items: center; justify-content: center; }
+  .drop-icon svg { width: 22px; height: 22px; stroke: var(--muted); fill: none; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; }
+  .drop-placeholder p { font-size: 14px; color: var(--text); font-weight: 500; }
+  .drop-placeholder span { font-size: 12px; color: var(--muted); font-weight: 300; margin-top: 4px; display: block; }
+  .pick-row { display: flex; gap: 8px; justify-content: center; margin-top: 14px; }
+  .pick-btn { display: inline-flex; align-items: center; gap: 6px; padding: 8px 16px; border-radius: 20px; border: 1px solid var(--border); background: var(--surface); color: var(--text); font-family: var(--font-body); font-size: 13px; font-weight: 400; cursor: pointer; transition: background 0.15s, border-color 0.15s; }
+  .pick-btn:hover { background: var(--accent-light); border-color: var(--accent); }
+  .pick-btn svg { width: 15px; height: 15px; stroke: currentColor; fill: none; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; }
+  #preview-wrap { display: none; width: 100%; position: relative; }
+  #preview-img { width: 100%; max-height: 260px; object-fit: cover; display: block; border-radius: 14px; }
+  .preview-change { position: absolute; top: 10px; right: 10px; background: rgba(26,23,20,0.75); color: #F5F2ED; font-size: 12px; padding: 5px 10px; border-radius: 20px; font-family: var(--font-body); border: none; cursor: pointer; }
+  .options { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 1rem; }
+  .opt-group label { display: block; font-size: 11px; font-weight: 500; color: var(--muted); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 6px; }
+  select { width: 100%; appearance: none; -webkit-appearance: none; padding: 10px 32px 10px 12px; border: 1px solid var(--border); border-radius: 10px; background: var(--surface) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%237A736A' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E") no-repeat right 10px center; color: var(--text); font-family: var(--font-body); font-size: 14px; cursor: pointer; }
+  select:focus { outline: none; border-color: var(--accent); }
+  .btn-generate { width: 100%; margin-top: 1rem; padding: 13px; background: var(--accent); color: var(--bg); border: none; border-radius: 12px; font-family: var(--font-body); font-size: 15px; font-weight: 500; cursor: pointer; transition: opacity 0.2s; display: flex; align-items: center; justify-content: center; gap: 8px; }
+  .btn-generate:hover:not(:disabled) { opacity: 0.85; }
+  .btn-generate:disabled { opacity: 0.35; cursor: not-allowed; }
+  .btn-icon { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; }
+  .loading { display: none; align-items: center; gap: 10px; margin-top: 1rem; color: var(--muted); font-size: 13px; justify-content: center; }
+  .dot-wave { display: flex; gap: 4px; }
+  .dot-wave span { width: 5px; height: 5px; background: var(--muted); border-radius: 50%; animation: bounce 1.2s ease-in-out infinite; }
+  .dot-wave span:nth-child(2) { animation-delay: 0.2s; }
+  .dot-wave span:nth-child(3) { animation-delay: 0.4s; }
+  @keyframes bounce { 0%,60%,100%{transform:translateY(0)} 30%{transform:translateY(-6px)} }
+  .error-msg { display: none; margin-top: 10px; font-size: 13px; color: #B03A2E; padding: 10px 14px; background: #FDF0EE; border-radius: 8px; border: 1px solid #F1C1BB; }
+  .result-box { display: none; margin-top: 1.5rem; background: var(--result-bg); border-radius: 16px; padding: 1.5rem; }
+  .result-label { font-size: 10px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.12em; color: rgba(245,242,237,0.4); margin-bottom: 0.75rem; }
+  #result-text { font-size: 15px; line-height: 1.75; color: var(--result-text); font-weight: 300; white-space: pre-wrap; }
+  .result-actions { display: flex; gap: 8px; margin-top: 1.25rem; padding-top: 1rem; border-top: 1px solid rgba(245,242,237,0.1); }
+  .btn-copy, .btn-new { padding: 7px 14px; border-radius: 8px; font-family: var(--font-body); font-size: 12px; cursor: pointer; border: 1px solid rgba(245,242,237,0.2); background: transparent; color: rgba(245,242,237,0.6); transition: background 0.15s, color 0.15s; display: flex; align-items: center; gap: 5px; }
+  .btn-copy:hover, .btn-new:hover { background: rgba(245,242,237,0.1); color: var(--result-text); }
+  .btn-icon-sm { width: 13px; height: 13px; fill: none; stroke: currentColor; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; }
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="header">
+    <h1>Riassumi <em>qualsiasi</em><br>documento o testo</h1>
+    <p>Carica o scatta una foto — il resto lo fa l'AI.</p>
+  </div>
+
+  <div class="drop-zone" id="drop-zone">
+    <div class="drop-placeholder" id="drop-placeholder">
+      <div class="drop-icon">
+        <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+      </div>
+      <p>Trascina un file qui</p>
+      <span>oppure scegli come caricare</span>
+      <div class="pick-row">
+        <button class="pick-btn" id="gallery-btn" type="button">
+          <svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+          Galleria
+        </button>
+        <button class="pick-btn" id="camera-btn" type="button">
+          <svg viewBox="0 0 24 24"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+          Fotocamera
+        </button>
+      </div>
+    </div>
+    <div id="preview-wrap">
+      <img id="preview-img" alt="Anteprima">
+      <button class="preview-change" id="change-btn" type="button">Cambia</button>
+    </div>
+  </div>
+
+  <input type="file" id="file-input" accept="image/*">
+  <input type="file" id="camera-input" accept="image/*" capture="environment">
+
+  <div class="options">
+    <div class="opt-group">
+      <label for="length-sel">Lunghezza</label>
+      <select id="length-sel">
+        <option value="breve">Breve (2–3 righe)</option>
+        <option value="medio" selected>Medio (1 paragrafo)</option>
+        <option value="lungo">Dettagliato</option>
+      </select>
+    </div>
+    <div class="opt-group">
+      <label for="tone-sel">Tono</label>
+      <select id="tone-sel">
+        <option value="neutro" selected>Neutro</option>
+        <option value="formale">Formale</option>
+        <option value="semplice">Semplice</option>
+        <option value="tecnico">Tecnico</option>
+        <option value="bullet">Bullet points</option>
+      </select>
+    </div>
+  </div>
+
+  <button class="btn-generate" id="generate-btn" disabled>
+    <svg class="btn-icon" viewBox="0 0 24 24"><path d="M12 2l2.4 7.4H22l-6.2 4.5 2.4 7.4L12 17l-6.2 4.3 2.4-7.4L2 9.4h7.6z"/></svg>
+    Genera riassunto
+  </button>
+
+  <div class="loading" id="loading">
+    <div class="dot-wave"><span></span><span></span><span></span></div>
+    <span>Leggendo il testo…</span>
+  </div>
+
+  <div class="error-msg" id="error-msg"></div>
+
+  <div class="result-box" id="result-box">
+    <p class="result-label">Riassunto</p>
+    <p id="result-text"></p>
+    <div class="result-actions">
+      <button class="btn-copy" id="copy-btn">
+        <svg class="btn-icon-sm" viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+        Copia
+      </button>
+      <button class="btn-new" id="new-btn">
+        <svg class="btn-icon-sm" viewBox="0 0 24 24"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-4.64"/></svg>
+        Nuova immagine
+      </button>
+    </div>
+  </div>
+</div>
+
+<script>
+  if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js');
+
+  const fileInput = document.getElementById('file-input');
+  const cameraInput = document.getElementById('camera-input');
+  const dropZone = document.getElementById('drop-zone');
+  const dropPlaceholder = document.getElementById('drop-placeholder');
+  const previewWrap = document.getElementById('preview-wrap');
+  const previewImg = document.getElementById('preview-img');
+  const generateBtn = document.getElementById('generate-btn');
+  const loading = document.getElementById('loading');
+  const resultBox = document.getElementById('result-box');
+  const resultText = document.getElementById('result-text');
+  const errorMsg = document.getElementById('error-msg');
+  const copyBtn = document.getElementById('copy-btn');
+  const newBtn = document.getElementById('new-btn');
+
+  let base64Data = null, mimeType = null;
+
+  document.getElementById('gallery-btn').addEventListener('click', e => { e.stopPropagation(); fileInput.click(); });
+  document.getElementById('camera-btn').addEventListener('click', e => { e.stopPropagation(); cameraInput.click(); });
+  document.getElementById('change-btn').addEventListener('click', e => { e.stopPropagation(); fileInput.click(); });
+
+  function handleFile(file) {
+    if (!file || !file.type.startsWith('image/')) { showError('Carica un file immagine valido.'); return; }
+    errorMsg.style.display = 'none';
+    const reader = new FileReader();
+    reader.onload = e => {
+      const src = e.target.result;
+      base64Data = src.slice(src.indexOf(',') + 1);
+      mimeType = file.type;
+      previewImg.src = src;
+      dropPlaceholder.style.display = 'none';
+      previewWrap.style.display = 'block';
+      generateBtn.disabled = false;
+    };
+    reader.readAsDataURL(file);
+  }
+
+  fileInput.addEventListener('change', e => handleFile(e.target.files[0]));
+  cameraInput.addEventListener('change', e => handleFile(e.target.files[0]));
+  dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('drag-over'); });
+  dropZone.addEventListener('dragleave', () => dropZone.classList.remove('drag-over'));
+  dropZone.addEventListener('drop', e => { e.preventDefault(); dropZone.classList.remove('drag-over'); handleFile(e.dataTransfer.files[0]); });
+
+  newBtn.addEventListener('click', () => {
+    base64Data = null; mimeType = null;
+    previewWrap.style.display = 'none';
+    dropPlaceholder.style.display = '';
+    previewImg.src = '';
+    fileInput.value = ''; cameraInput.value = '';
+    generateBtn.disabled = true;
+    resultBox.style.display = 'none';
+    errorMsg.style.display = 'none';
+  });
+
+  function showError(msg) { errorMsg.textContent = msg; errorMsg.style.display = 'block'; }
+
+  function buildPrompt(length, tone) {
+    const lunghezza = { breve: 'in modo molto breve, massimo 2-3 righe', medio: 'in un unico paragrafo di media lunghezza', lungo: 'in modo dettagliato con più paragrafi' }[length];
+    const tono = { neutro: 'tono neutro e oggettivo', formale: 'tono formale e professionale', semplice: 'linguaggio semplice e divulgativo, accessibile a tutti', tecnico: 'tono tecnico e preciso con terminologia appropriata', bullet: 'formato a bullet points elencando i punti principali' }[tone];
+    return `Estrai tutto il testo scritto che vedi in questa immagine e riassumilo ${lunghezza}, con ${tono}. Cattura i concetti chiave e le informazioni importanti come farebbe uno studente che vuole capire rapidamente il contenuto. Non fare mai riferimento all'immagine, al layout o all'aspetto visivo. Non usare frasi come "l'immagine mostra" o "la pagina contiene". Parti subito dal contenuto. Rispondi in italiano.`;
+  }
+
+  generateBtn.addEventListener('click', async () => {
+    if (!base64Data) return;
+    generateBtn.disabled = true;
+    loading.style.display = 'flex';
+    resultBox.style.display = 'none';
+    errorMsg.style.display = 'none';
+
+    try {
+      const res = await fetch('/api/summarize', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          image: base64Data,
+          mimeType,
+          prompt: buildPrompt(document.getElementById('length-sel').value, document.getElementById('tone-sel').value)
+        })
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Errore API');
+      resultText.textContent = data.result;
+      resultBox.style.display = 'block';
+    } catch (err) {
+      showError('Errore: ' + err.message);
+    } finally {
+      loading.style.display = 'none';
+      generateBtn.disabled = false;
+    }
+  });
+
+  copyBtn.addEventListener('click', () => {
+    navigator.clipboard.writeText(resultText.textContent).then(() => {
+      copyBtn.innerHTML = `<svg class="btn-icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> Copiato!`;
+      setTimeout(() => { copyBtn.innerHTML = `<svg class="btn-icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg> Copia`; }, 2000);
+    });
+  });
+</script>
+</body>
+</html>
