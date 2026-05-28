@@ -1,6 +1,6 @@
 {
-  "name": "Riassumi Documento",
-  "short_name": "Riassumi",
+  "name": "Summarizer",
+  "short_name": "Summarizer",
   "description": "Riassumi qualsiasi documento o testo con l'AI",
   "start_url": "/",
   "display": "standalone",
