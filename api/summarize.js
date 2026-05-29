@@ -17,7 +17,7 @@ export default async function handler(req, res) {
               { text: prompt }
             ]
           }],
-          generationConfig: { maxOutputTokens: 1000 }
+          generationConfig: { maxOutputTokens: 8192 }
         })
       }
     );
